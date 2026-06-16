@@ -1,0 +1,35 @@
+{
+  "name": "provenance",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mysten-incubation/memwal": "latest",
+    "@mysten/dapp-kit-core": "latest",
+    "@mysten/dapp-kit-react": "latest",
+    "@mysten/seal": "latest",
+    "@mysten/sui": "latest",
+    "@mysten/walrus": "latest",
+    "lucide-react": "^0.468.0",
+    "nanoid": "^5.0.7",
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
