@@ -104,11 +104,7 @@ const IconBrain = () => (
     <path d="M12 16v-4M12 8h.01" />
   </svg>
 );
-const IconHome = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-  </svg>
-);
+
 const IconExternalLink = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -182,7 +178,7 @@ export function Dashboard() {
         lastBlobId: cps.length > 0 ? cps[cps.length - 1].blobId : null,
         proofUrl: finalProofUrl,
         proofBlobId: finalProofUrl
-          ? (finalProofUrl.split("/blobs/")[1] ?? null)
+          ? (finalProofUrl.split("/blobs/")[1] ?? finalProofUrl.split("/proof/")[1] ?? null)
           : null,
       };
       if (idx >= 0) all[idx] = entry;
@@ -200,7 +196,7 @@ export function Dashboard() {
         sessionId,
         title: extractTitle(contentRef.current),
         url,
-        proofBlobId: url.split("/blobs/")[1] ?? null,
+        proofBlobId: url.split("/blobs/")[1] ?? url.split("/proof/")[1] ?? null,
         checkpointCount: cps.length,
         wordCount: countWords(contentRef.current),
         walletAddress,
@@ -275,16 +271,23 @@ export function Dashboard() {
 
   // ─── Timer ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const auto = setInterval(() => sealCheckpoint(), INTERVAL);
-    const cd = setInterval(() => {
-      if (!savingRef.current) {
-        setNextSaveIn((n) => {
-          const v = Math.max(0, n - 1);
-          return v;
-        });
+    const timer = setInterval(() => {
+      if (contentRef.current.trim() === "") {
+        setNextSaveIn(INTERVAL / 1000);
+        return;
       }
+      if (savingRef.current) return;
+
+      setNextSaveIn((prev) => {
+        if (prev <= 1) {
+          void sealCheckpoint();
+          return INTERVAL / 1000;
+        }
+        return prev - 1;
+      });
     }, 1000);
-    return () => { clearInterval(auto); clearInterval(cd); };
+
+    return () => clearInterval(timer);
   }, [sealCheckpoint]);
 
   // ─── Agent Analysis ───────────────────────────────────────────────────────
@@ -418,7 +421,7 @@ export function Dashboard() {
     error:  "ticker tk-error",
   }[tickerState];
 
-  const walletInitial = wallet?.name?.[0]?.toUpperCase() ?? walletAddress.slice(2, 4).toUpperCase() ?? "P";
+
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -426,30 +429,32 @@ export function Dashboard() {
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toast && (
-        <div className={`toast-d ${toast.type === "ok" ? "toast-ok" : toast.type === "err" ? "toast-err" : ""}`}>
-          {toast.msg}
+        <div className="toast-wrap" id="toasts">
+          <div className={`toast ${toast.type === "ok" ? "ok" : toast.type === "err" ? "err" : ""}`}>
+            {toast.msg}
+          </div>
         </div>
       )}
 
       {/* ── Proof Modal ───────────────────────────────────────────────── */}
       {modalOpen && proofUrl && (
-        <div className="modal-backdrop open" onClick={(e) => { if ((e.target as HTMLElement).classList.contains("modal-backdrop")) setModalOpen(false); }}>
-          <div className="modal-box">
-            <button className="modal-x" type="button" onClick={() => setModalOpen(false)}>✕</button>
+        <div className="modal-bg open" onClick={(e) => { if ((e.target as HTMLElement).classList.contains("modal-bg")) setModalOpen(false); }}>
+          <div className="modal">
+            <button className="modal-close" type="button" onClick={() => setModalOpen(false)}>✕</button>
             <div className="modal-icon">✓</div>
             <div className="modal-title">Proof Sealed on Walrus</div>
             <p className="modal-sub">
               {checkpoints.length} checkpoints · session_{sessionId} · {truncateAddress(walletAddress)}
             </p>
-            <div className="modal-sum">
-              <div className="ms-item"><div className="ms-val">{checkpoints.length}</div><div className="ms-lbl">checkpoints</div></div>
-              <div className="ms-item"><div className="ms-val">{wordCount}</div><div className="ms-lbl">words</div></div>
-              <div className="ms-item"><div className="ms-val">∞</div><div className="ms-lbl">lifetime</div></div>
+            <div className="modal-stats">
+              <div className="ms"><div className="ms-val">{checkpoints.length}</div><div className="ms-lbl">checkpoints</div></div>
+              <div className="ms"><div className="ms-val">{wordCount}</div><div className="ms-lbl">words</div></div>
+              <div className="ms"><div className="ms-val">∞</div><div className="ms-lbl">lifetime</div></div>
             </div>
             <div className="modal-url-lbl">Permanent Walrus Proof URL</div>
             <div className="modal-url">{proofUrl}</div>
             <div className="modal-acts">
-              <button className="modal-copy" type="button" onClick={() => copy(proofUrl, "URL copied!")}>Copy URL</button>
+              <button className="modal-copy" type="button" onClick={() => void copy(proofUrl, "URL copied!")}>Copy URL</button>
               <a className="modal-open" href={proofUrl} target="_blank" rel="noreferrer">Open Proof →</a>
             </div>
           </div>
@@ -457,149 +462,136 @@ export function Dashboard() {
       )}
 
       {/* ── Dashboard Shell ───────────────────────────────────────────── */}
-      <div className="dash-shell">
+      <div className="shell">
 
         {/* ── Sidebar ───────────────────────────────────────────────── */}
-        <aside className="dsidebar">
+        <aside className="sidebar">
           {/* Brand + new session */}
-          <div className="dsb-head">
-            <div className="brand">
-              <span className="pulse" />
-              <span className="dsb-brand">Provenance</span>
+          <div className="sb-head">
+            <div className="sb-logo">
+              <div className="sb-beacon" />
+              Provenance
             </div>
-            <button className="dsb-newbtn" type="button" title="New session" onClick={startNewSession}>+</button>
+            <button className="sb-new" type="button" title="New session" onClick={startNewSession}>+</button>
           </div>
 
-          {/* Wallet chip */}
-          <div className="dsb-wallet">
-            <div className="dsb-wdot" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="dsb-waddr">{truncateAddress(walletAddress)}</div>
-              <div className="dsb-wnet">Sui Testnet</div>
-            </div>
-            <button type="button" className="dsb-wdiscon" onClick={disconnectWallet}>Disconnect</button>
-          </div>
 
           {/* Nav */}
-          <nav className="dsb-nav">
-            <div className="dsb-sec-lbl">Workspace</div>
+          <nav className="sb-nav">
+            <div className="sb-sec-lbl">Workspace</div>
 
-            <button type="button" className={`dsb-navbtn ${panel === "editor" ? "active" : ""}`} onClick={() => goPanel("editor")}>
+            <button type="button" className={`sb-btn ${panel === "editor" ? "active" : ""}`} onClick={() => goPanel("editor")}>
               <IconPen />
               Editor
-              <span className="dsb-count">{checkpoints.length} cp</span>
+              <span className="sb-badge">{checkpoints.length} cp</span>
             </button>
 
-            <button type="button" className={`dsb-navbtn ${panel === "sessions" ? "active" : ""}`} onClick={() => goPanel("sessions")}>
+            <button type="button" className={`sb-btn ${panel === "sessions" ? "active" : ""}`} onClick={() => goPanel("sessions")}>
               <IconFile />
               Sessions
-              <span className="dsb-count">{sessions.length}</span>
+              <span className="sb-badge">{sessions.length}</span>
             </button>
 
-            <button type="button" className={`dsb-navbtn ${panel === "proofs" ? "active" : ""}`} onClick={() => goPanel("proofs")}>
+            <button type="button" className={`sb-btn ${panel === "proofs" ? "active" : ""}`} onClick={() => goPanel("proofs")}>
               <IconShield />
               Proofs
-              <span className="dsb-count">{proofs.length}</span>
+              <span className="sb-badge">{proofs.length}</span>
             </button>
 
-            <button type="button" className={`dsb-navbtn ${panel === "agent" ? "active" : ""}`} onClick={() => goPanel("agent")}>
+            <button type="button" className={`sb-btn ${panel === "agent" ? "active" : ""}`} onClick={() => goPanel("agent")}>
               <IconBrain />
               Agent Insights
-              {agentState === "analyzing" && <span className="dsb-count" style={{ color: "var(--sui)" }}>•••</span>}
+              {agentState === "analyzing" && <span className="sb-badge" style={{ color: "var(--tidal-mid)" }}>•••</span>}
             </button>
 
-            <div className="dsb-sec-lbl" style={{ marginTop: "0.75rem" }}>Account</div>
+            <div className="sb-sec-lbl" style={{ marginTop: "0.75rem" }}>Account</div>
 
-            <button type="button" className={`dsb-navbtn ${panel === "wallet" ? "active" : ""}`} onClick={() => goPanel("wallet")}>
+            <button type="button" className={`sb-btn ${panel === "wallet" ? "active" : ""}`} onClick={() => goPanel("wallet")}>
               <IconWallet />
               Wallet Info
             </button>
 
-            <button type="button" className="dsb-navbtn" onClick={() => router.push("/")}>
-              <IconHome />
-              Home
-            </button>
+
           </nav>
 
           {/* Bottom Walrus status */}
-          <div className="dsb-bottom">
-            <div className="walrus-chip">
-              <div className="wc-dot" />
-              <div className="wc-txt">Walrus Testnet</div>
-              <div className="wc-net">Live</div>
+          <div className="sb-bottom">
+            <div className="walrus-status">
+              <div className="ws-dot" />
+              <div className="ws-lbl">Walrus Testnet</div>
+              <div className="ws-net">Live</div>
             </div>
           </div>
         </aside>
 
         {/* ── Main Area ──────────────────────────────────────────────── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className="main">
 
           {/* Topbar */}
-          <div className="dash-topbar">
-            <div className="dt-left">
-              <div className="dt-title">
+          <div className="topbar">
+            <div className="tb-left">
+              <div className="tb-title">
                 {{ editor: "Editor", sessions: "Sessions", proofs: "Proofs", wallet: "Wallet Info", agent: "AI Agent Insights" }[panel]}
               </div>
-              <div className="dt-session">session_{sessionId}</div>
+              <div className="tb-session">session_{sessionId}</div>
             </div>
-            <div className="dt-right">
-              {DEMO && <span className="dt-demo">Demo Mode · 15s seal</span>}
-              <div className="dt-avatar">{walletInitial}</div>
+            <div className="tb-right">
+              {DEMO && <span className="tb-demo">Demo · 15s seal</span>}
             </div>
           </div>
 
           {/* Scrollable content */}
-          <div className="dash-main">
+          <div className="scroll-area">
 
             {/* ══ EDITOR PANEL ══════════════════════════════════════════ */}
-            <div className={`dpanel ${panel === "editor" ? "active" : ""}`} id="panel-editor">
+            <div className={`panel ${panel === "editor" ? "active" : ""}`} id="panel-editor">
 
               {/* Stats bar */}
-              <div className="stats-bar">
-                <div className="stat-box">
-                  <div className="stat-box-lbl">Words</div>
-                  <div className="stat-box-val">{wordCount}</div>
-                  <div className="stat-box-sub">current draft</div>
+              <div className="stats-row">
+                <div className="stat">
+                  <div className="stat-lbl">Words</div>
+                  <div className="stat-val">{wordCount}</div>
+                  <div className="stat-sub">current draft</div>
                 </div>
-                <div className="stat-box">
-                  <div className="stat-box-lbl">Checkpoints</div>
-                  <div className="stat-box-val">{checkpoints.length}</div>
-                  <div className={`stat-box-sub ${checkpoints.length > 0 ? "ok" : ""}`}>
+                <div className="stat">
+                  <div className="stat-lbl">Checkpoints</div>
+                  <div className="stat-val">{checkpoints.length}</div>
+                  <div className={`stat-sub ${checkpoints.length > 0 ? "ok" : ""}`}>
                     {checkpoints.length > 0
                       ? `last: ${formatTime(checkpoints[checkpoints.length - 1]?.timestamp)}`
                       : "none sealed yet"}
                   </div>
                 </div>
-                <div className="stat-box">
-                  <div className="stat-box-lbl">Next Seal</div>
-                  <div className="stat-box-val">{tickerState === "saving" ? "…" : `${nextSaveIn}s`}</div>
-                  <div className="stat-box-sub warn">{DEMO ? "demo interval" : "1 min interval"}</div>
+                <div className="stat">
+                  <div className="stat-lbl">Next Seal</div>
+                  <div className="stat-val">{tickerState === "saving" ? "…" : `${nextSaveIn}s`}</div>
+                  <div className="stat-sub warn">{DEMO ? "demo interval" : "1 min interval"}</div>
                 </div>
-                <div className="stat-box">
-                  <div className="stat-box-lbl">Wallet</div>
-                  <div className="stat-box-val" style={{ fontSize: "1rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                <div className="stat">
+                  <div className="stat-lbl">Wallet</div>
+                  <div className="stat-val mono">
                     {truncateAddress(walletAddress)}
                   </div>
-                  <div className="stat-box-sub ok">Connected · Testnet</div>
+                  <div className="stat-sub ok">Connected · Testnet</div>
                 </div>
               </div>
 
               {/* Editor section */}
-              <div className="editor-section">
+              <div className="editor-wrap">
 
                 {/* Main editor card */}
                 <div className="editor-card">
                   <div className="editor-toolbar">
-                    <div className="etb-left">
-                      <span className="etb-sid">session_{sessionId}</span>
-                      <span className="etb-wc">{wordCount} words</span>
+                    <div className="et-left">
+                      <span className="et-sid">session_{sessionId}</span>
+                      <span className="et-wc">{wordCount} words</span>
                       <div className={tickerClass}>
                         <span className="tk-dot" />
                         <span>{tickerLabel()}</span>
                       </div>
                     </div>
-                    <div className="etb-right">
-                      <span className="etb-cp-badge">{checkpoints.length} checkpoints</span>
+                    <div className="et-right">
+                      <span className="et-count">{checkpoints.length} checkpoints</span>
                       <button
                         type="button"
                         className={`btn-proof ${proofState === "generating" ? "loading" : ""}`}
@@ -608,7 +600,7 @@ export function Dashboard() {
                         id="proof-btn"
                       >
                         {proofState === "generating" ? (
-                          <><Spinner /> Building proof...</>
+                          <><span className="spinner"></span> Building proof...</>
                         ) : "Generate Proof"}
                       </button>
                     </div>
@@ -626,30 +618,30 @@ export function Dashboard() {
                 <div className="agent-card">
                   <div className="agent-head">
                     <IconBrain />
-                    <div className="agent-head-title">AI Writing Agent</div>
+                    <div className="agent-title">AI Writing Agent</div>
                     <span className="agent-badge">MemWal powered</span>
                   </div>
                   <div id="agent-body">
                     {agentState === "analyzing" ? (
                       <div className="agent-analyzing">
-                        <Spinner blue size={14} />
+                        <span className="spinner spinner-blue" />
                         Agent analyzing checkpoint history via MemWal...
                       </div>
                     ) : agentInsights ? (
                       <div className="agent-insights">
                         {agentInsights.agentSummary && (
-                          <div className="agent-insight">{agentInsights.agentSummary}</div>
-                        )}
-                        {agentInsights.themes.length > 0 && (
-                          <div className="agent-insight">
-                            Themes detected: {agentInsights.themes.join(" · ")}
-                          </div>
+                          <div className="agent-insight" style={{ fontWeight: 600 }}>{agentInsights.agentSummary}</div>
                         )}
                         {agentInsights.styleNotes && (
                           <div className="agent-insight">Style: {agentInsights.styleNotes}</div>
                         )}
                         {agentInsights.paceSummary && (
                           <div className="agent-insight">{agentInsights.paceSummary}</div>
+                        )}
+                        {agentInsights.themes.length > 0 && (
+                          <div className="agent-insight">
+                            Themes detected: {agentInsights.themes.join(" · ")}
+                          </div>
                         )}
                         {agentInsights.keyIdeas.length > 0 && (
                           <div className="agent-insight">
@@ -664,7 +656,7 @@ export function Dashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="agent-empty">
+                      <div className="agent-body-empty">
                         <p>
                           The writing agent will analyze your draft history
                           <br />
@@ -676,10 +668,10 @@ export function Dashboard() {
                 </div>
 
                 {/* Checkpoint log */}
-                <div className="cp-log-card">
-                  <div className="cp-log-head">
-                    <div className="cp-log-title">Checkpoint Chain</div>
-                    <div className="cp-log-meta">Each entry is a permanent Walrus blob</div>
+                <div className="cp-card">
+                  <div className="cp-head">
+                    <div className="cp-head-title">Checkpoint Chain</div>
+                    <div className="cp-head-meta">Each entry is a permanent Walrus blob</div>
                   </div>
                   {checkpoints.length === 0 ? (
                     <div className="cp-empty">
@@ -691,14 +683,14 @@ export function Dashboard() {
                         const prev = arr[i + 1]?.wordCount ?? 0;
                         const delta = cp.wordCount - prev;
                         return (
-                          <div key={cp.blobId} className="cp-item">
+                           <div key={cp.blobId} className="cp-row">
                             <div className="cp-num">{cp.index + 1}</div>
-                            <div className="cp-main">
+                            <div className="cp-info">
                               <div className="cp-time">{formatTime(cp.timestamp)} · {cp.wordCount} words</div>
                               <div
                                 className="cp-blob"
                                 title="Click to copy blob ID"
-                                onClick={() => copy(cp.blobId, "Blob ID copied")}
+                                onClick={() => void copy(cp.blobId, "Blob ID copied")}
                               >
                                 {cp.blobId}
                               </div>
@@ -717,28 +709,28 @@ export function Dashboard() {
             </div>
 
             {/* ══ SESSIONS PANEL ════════════════════════════════════════ */}
-            <div className={`dpanel ${panel === "sessions" ? "active" : ""}`} id="panel-sessions">
-              <div className="sessions-wrap">
+            <div className={`panel ${panel === "sessions" ? "active" : ""}`} id="panel-sessions">
+              <div className="panel-wrap">
                 <div className="panel-head">
                   <div>
                     <div className="ph-title">Sessions</div>
                     <div className="ph-sub">All writing sessions from your wallet</div>
                   </div>
-                  <button type="button" className="btn-small dark" onClick={startNewSession}>+ New Session</button>
+                  <button type="button" className="btn-small primary" onClick={startNewSession}>+ New Session</button>
                 </div>
                 <div className="sess-grid">
                   {sessions.length === 0 ? (
                     <div className="empty-state"><p>No sessions yet. Start writing to create your first session.</p></div>
                   ) : sessions.map((s) => (
                     <div key={s.sessionId} className="sess-card">
-                      <div className="sc-top">
+                      <div className="sc-head">
                         <div className="sc-title">{s.title || "Untitled"}</div>
-                        {s.proofUrl && <span className="sc-proof-pill">Proof Ready</span>}
+                        {s.proofUrl && <span className="sc-proof-tag">Proof Ready</span>}
                       </div>
                       <div className="sc-meta">
                         {s.checkpointCount} checkpoints · {s.wordCount} words · {formatDate(s.lastSaved)}
                         <br />
-                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".65rem", color: "var(--ink-4)" }}>
+                        <span className="sc-mono" style={{ color: "var(--ink-40)" }}>
                           {truncateAddress(s.walletAddress)}
                         </span>
                       </div>
@@ -746,10 +738,10 @@ export function Dashboard() {
                         {s.proofUrl ? (
                           <>
                             <a className="sc-act prim" href={s.proofUrl} target="_blank" rel="noreferrer">View Proof →</a>
-                            <button type="button" className="sc-act" onClick={() => copy(s.proofUrl!, "URL copied!")}>Copy URL</button>
+                            <button type="button" className="sc-act" onClick={() => void copy(s.proofUrl!, "URL copied!")}>Copy URL</button>
                           </>
                         ) : (
-                          <button type="button" className="sc-act" onClick={() => setPanel("editor")}>Continue Writing</button>
+                          <button type="button" className="sc-act" onClick={() => goPanel("editor")}>Continue Writing</button>
                         )}
                       </div>
                     </div>
@@ -759,30 +751,30 @@ export function Dashboard() {
             </div>
 
             {/* ══ PROOFS PANEL ══════════════════════════════════════════ */}
-            <div className={`dpanel ${panel === "proofs" ? "active" : ""}`} id="panel-proofs">
-              <div className="sessions-wrap">
+            <div className={`panel ${panel === "proofs" ? "active" : ""}`} id="panel-proofs">
+              <div className="panel-wrap">
                 <div className="panel-head">
                   <div>
                     <div className="ph-title">Generated Proofs</div>
                     <div className="ph-sub">Permanent Walrus proof pages</div>
                   </div>
                 </div>
-                <div id="proofs-list">
+                <div className="proof-list">
                   {proofs.length === 0 ? (
                     <div className="empty-state">
                       <p>No proofs yet.<br />Write something and click "Generate Proof" to create your first verifiable authorship certificate.</p>
                     </div>
                   ) : proofs.map((p) => (
-                    <div key={`${p.sessionId}-${p.createdAt}`} className="proof-card">
-                      <div className="pc-head">
-                        <div className="pc-title">{p.title || "Untitled"}</div>
-                        <div className="pc-time">{formatDate(p.createdAt)}</div>
+                    <div key={`${p.sessionId}-${p.createdAt}`} className="proof-item">
+                      <div className="pi-head">
+                        <div className="pi-title">{p.title || "Untitled"}</div>
+                        <div className="pi-time">{formatDate(p.createdAt)}</div>
                       </div>
-                      <div className="pc-url">{p.url}</div>
-                      <div className="pc-acts">
-                        <a className="pc-act prim" href={p.url} target="_blank" rel="noreferrer">Open Proof →</a>
-                        <button type="button" className="pc-act" onClick={() => copy(p.url, "URL copied!")}>Copy URL</button>
-                        <span style={{ marginLeft: "auto", fontSize: ".7rem", color: "var(--ink-4)", alignSelf: "center" }}>
+                      <div className="pi-url">{p.url}</div>
+                      <div className="pi-acts">
+                        <a className="pi-act prim" href={p.url} target="_blank" rel="noreferrer">Open Proof →</a>
+                        <button type="button" className="pi-act" onClick={() => void copy(p.url, "URL copied!")}>Copy URL</button>
+                        <span className="pi-meta">
                           {p.checkpointCount} cp · {p.wordCount} words
                         </span>
                       </div>
@@ -793,8 +785,8 @@ export function Dashboard() {
             </div>
 
             {/* ══ AGENT PANEL ═══════════════════════════════════════════ */}
-            <div className={`dpanel ${panel === "agent" ? "active" : ""}`} id="panel-agent">
-              <div className="sessions-wrap">
+            <div className={`panel ${panel === "agent" ? "active" : ""}`} id="panel-agent">
+              <div className="panel-wrap">
                 <div className="panel-head">
                   <div>
                     <div className="ph-title">AI Writing Agent</div>
@@ -802,11 +794,12 @@ export function Dashboard() {
                   </div>
                   <button
                     type="button"
-                    className="btn-small dark"
+                    className="btn-small"
+                    id="reanalyze-btn"
                     disabled={checkpoints.length === 0 || agentState === "analyzing"}
                     onClick={() => void runAgentAnalysis()}
                   >
-                    {agentState === "analyzing" ? <><Spinner />Analyzing…</> : "Re-analyse"}
+                    {agentState === "analyzing" ? <><span className="spinner"></span>Analyzing…</> : "Re-analyse"}
                   </button>
                 </div>
 
@@ -814,33 +807,32 @@ export function Dashboard() {
                   <div className="agent-card">
                     <div className="agent-head">
                       <IconBrain />
-                      <div className="agent-head-title">AI Writing Agent</div>
+                      <div className="agent-title">AI Writing Agent</div>
                       <span className="agent-badge">MemWal powered</span>
                     </div>
                     <div className="agent-analyzing">
-                      <Spinner blue size={14} />
+                      <span className="spinner spinner-blue" />
                       Recalling checkpoint history from MemWal and running analysis...
                     </div>
                   </div>
                 ) : agentInsights ? (
                   <>
-                    <div className="agent-card" style={{ marginBottom: "1rem" }}>
-                      <div className="agent-head">
-                        <IconBrain />
-                        <div className="agent-head-title">AI Writing Agent</div>
-                        <span className="agent-badge">MemWal powered</span>
+                    <div className="agent-panel-card">
+                      <div className="apc-head">
+                        <div className="apc-title">AI Writing Agent — MemWal Analysis</div>
+                        <div className="apc-time">{formatTime(agentInsights.analyzedAt)}</div>
                       </div>
-                      <div className="agent-insights">
-                        <div className="agent-insight" style={{ fontWeight: 600 }}>{agentInsights.agentSummary}</div>
-                        {agentInsights.styleNotes && <div className="agent-insight">Style: {agentInsights.styleNotes}</div>}
-                        {agentInsights.paceSummary && <div className="agent-insight">{agentInsights.paceSummary}</div>}
+                      <div className="apc-insights">
+                        <div className="apc-insight bold">{agentInsights.agentSummary}</div>
+                        {agentInsights.styleNotes && <div className="apc-insight">Style: {agentInsights.styleNotes}</div>}
+                        {agentInsights.paceSummary && <div className="apc-insight">{agentInsights.paceSummary}</div>}
                         {agentInsights.themes.length > 0 && (
-                          <div className="agent-insight">Themes: {agentInsights.themes.join(" · ")}</div>
+                          <div className="apc-insight">Themes: {agentInsights.themes.join(" · ")}</div>
                         )}
                         {agentInsights.keyIdeas.length > 0 && (
-                          <div className="agent-insight">Key ideas: {agentInsights.keyIdeas.join(" · ")}</div>
+                          <div className="apc-insight">Key ideas: {agentInsights.keyIdeas.join(" · ")}</div>
                         )}
-                        <div className="agent-insight" style={{ color: "var(--ink-4)" }}>
+                        <div className="apc-insight muted">
                           Analysed {agentInsights.checkpointCount} checkpoint{agentInsights.checkpointCount !== 1 ? "s" : ""} · {formatDate(agentInsights.analyzedAt)}
                         </div>
                       </div>
@@ -850,7 +842,7 @@ export function Dashboard() {
                   <div className="agent-card">
                     <div className="agent-head">
                       <IconBrain />
-                      <div className="agent-head-title">AI Writing Agent</div>
+                      <div className="agent-title">AI Writing Agent</div>
                       <span className="agent-badge">Local analysis</span>
                     </div>
                     <div className="agent-insights">
@@ -859,68 +851,68 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <div className="empty-state">
-                    <p>No analysis yet.<br />Seal at least one checkpoint, then click <strong>Agent Insights</strong> to run AI analysis.</p>
+                    <p>No analysis yet.<br />Seal at least one checkpoint, then click <strong>Re-analyse</strong> to run AI analysis.</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* ══ WALLET PANEL ══════════════════════════════════════════ */}
-            <div className={`dpanel ${panel === "wallet" ? "active" : ""}`} id="panel-wallet">
-              <div className="wallet-wrap">
-                <div className="panel-head">
+            <div className={`panel ${panel === "wallet" ? "active" : ""}`} id="panel-wallet">
+              <div className="panel-wrap" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div className="panel-head" style={{ width: "100%", maxWidth: "520px" }}>
                   <div>
                     <div className="ph-title">Wallet Info</div>
                     <div className="ph-sub">Your connected Sui wallet</div>
                   </div>
                 </div>
-                <div className="winfo-card">
-                  <div className="wic-head">
-                    <div className="wic-avatar">🌊</div>
+                <div className="wallet-card">
+                  <div className="wc-head">
+                    <div className="wc-avatar">🌊</div>
                     <div>
-                      <div className="wic-addr">{walletAddress}</div>
-                      <div className="wic-net">{wallet?.name ?? "Sui Wallet"} · Sui Testnet</div>
+                      <div className="wc-addr">{walletAddress}</div>
+                      <div className="wc-net">{wallet?.name ?? "Sui Wallet"} · Sui Testnet</div>
                     </div>
-                    <div className="wic-connected">● Connected</div>
+                    <div className="wc-connected">● Connected</div>
                   </div>
-                  <div className="wic-rows">
-                    <div className="wic-row">
-                      <div className="wic-row-lbl">Wallet</div>
-                      <div className="wic-row-val">{wallet?.name ?? "Sui Wallet"}</div>
+                  <div className="wc-rows">
+                    <div className="wc-row">
+                      <div className="wc-row-lbl">Wallet</div>
+                      <div className="wc-row-val">{wallet?.name ?? "Sui Wallet"}</div>
                     </div>
-                    <div className="wic-row">
-                      <div className="wic-row-lbl">Network</div>
-                      <div className="wic-row-val green">Sui Testnet</div>
+                    <div className="wc-row">
+                      <div className="wc-row-lbl">Network</div>
+                      <div className="wc-row-val green">Sui Testnet</div>
                     </div>
-                    <div className="wic-row">
-                      <div className="wic-row-lbl">Sessions</div>
-                      <div className="wic-row-val">{sessions.length}</div>
+                    <div className="wc-row">
+                      <div className="wc-row-lbl">Sessions</div>
+                      <div className="wc-row-val">{sessions.length}</div>
                     </div>
-                    <div className="wic-row">
-                      <div className="wic-row-lbl">Proofs</div>
-                      <div className="wic-row-val">{proofs.length}</div>
+                    <div className="wc-row">
+                      <div className="wc-row-lbl">Proofs</div>
+                      <div className="wc-row-val">{proofs.length}</div>
                     </div>
-                    <div className="wic-row">
-                      <div className="wic-row-lbl">Walrus Network</div>
-                      <div className="wic-row-val blue">Testnet · aggregator.walrus-testnet.walrus.space</div>
+                    <div className="wc-row">
+                      <div className="wc-row-lbl">Walrus Network</div>
+                      <div className="wc-row-val blue">Testnet · aggregator.walrus-testnet.walrus.space</div>
                     </div>
-                    <div className="wic-row">
-                      <div className="wic-row-lbl">MemWal Relayer</div>
-                      <div className="wic-row-val blue">relayer.memory.walrus.xyz</div>
+                    <div className="wc-row">
+                      <div className="wc-row-lbl">MemWal Relayer</div>
+                      <div className="wc-row-val blue">relayer.memory.walrus.xyz</div>
                     </div>
                   </div>
-                  <div className="wic-foot">
-                    <button type="button" className="wic-btn" onClick={() => copy(walletAddress, "Address copied!")}>Copy Address</button>
-                    <a className="wic-btn" href={`https://suiscan.xyz/testnet/account/${walletAddress}`} target="_blank" rel="noreferrer">Explorer</a>
-                    <button type="button" className="wic-btn danger" onClick={disconnectWallet}>Disconnect</button>
+                  <div className="wc-foot">
+                    <button type="button" className="wc-btn" onClick={() => void copy(walletAddress, "Address copied!")}>Copy Address</button>
+                    <a className="wc-btn" href={`https://suiscan.xyz/testnet/account/${walletAddress}`} target="_blank" rel="noreferrer">Explorer ↗</a>
+                    <button type="button" className="wc-btn danger" onClick={disconnectWallet}>Disconnect</button>
                   </div>
                 </div>
               </div>
             </div>
 
-          </div>{/* end dash-main */}
+          </div>{/* end scroll-area */}
         </div>{/* end flex col */}
-      </div>{/* end dash-shell */}
+      </div>{/* end shell */}
     </div>
   );
 }
