@@ -15,11 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "No checkpoints found for this session" }, { status: 404 });
     }
 
-    const { proofBlobId } = await generateAndPublishProof(sessionId, walletAddress, checkpoints);
-
-    const host = req.headers.get("host") || "localhost:3000";
-    const protocol = req.headers.get("x-forwarded-proto") || "http";
-    const proofUrl = `${protocol}://${host}/proof/${proofBlobId}`;
+    const { proofUrl, proofBlobId } = await generateAndPublishProof(sessionId, walletAddress, checkpoints);
 
     return NextResponse.json({
       success: true,

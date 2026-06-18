@@ -62,6 +62,12 @@ export function generateProofHtml(sessionId: string, walletAddress: string, entr
       excerpt: e.excerpt,
     })),
   };
+  const proofJson = JSON.stringify(proofData)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -542,7 +548,7 @@ main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
 
 <script>
 /* ══ DATA FROM SERVER ══ */
-const PROOF = ${JSON.stringify(proofData)};
+const PROOF = ${proofJson};
 
 const AGG = 'https://aggregator.walrus-testnet.walrus.space';
 
@@ -665,9 +671,8 @@ async function runVerify() {
         result.innerHTML = '✕ Cryptographic mismatch. Expected hash ' + known.contentHash + ' but computed ' + computedHash + '.';
       }
     } catch (e) {
-      // Fallback if fetch fails (e.g. CORS, offline)
-      result.className = 'vw-result ok';
-      result.innerHTML = '✓ Blob ID matches checkpoint #' + (known.index + 1) + ' (Aggregator offline/CORS, verification simulated) · ' + known.wordCount + ' words<br>SHA-256: <code style="font-size:.72rem;word-break:break-all">' + known.contentHash + '</code>';
+      result.className = 'vw-result fail';
+      result.textContent = 'Verification unavailable: the Walrus blob could not be fetched. No verification result was produced.';
     }
   } else {
     // If not found in this session, try to query anyway
@@ -711,10 +716,8 @@ async function verifySingleCheckpoint(index) {
       el.innerHTML = '✕ Mismatch · Hash computed: ' + computedHash.slice(0,8) + '...';
     }
   } catch (e) {
-    // CORS/Network Fallback
-    await sleep(600 + Math.random() * 400);
-    el.className = 'cp-verify-result ok';
-    el.innerHTML = \`✓ Verified (Simulated) · SHA-256 matches · <code style="font-size:.65rem">\text\${entry.contentHash.slice(0,16)}...</code>\`;
+    el.className = 'cp-verify-result fail';
+    el.textContent = 'Verification unavailable: unable to fetch this Walrus blob.';
   }
 }
 
@@ -761,8 +764,7 @@ export async function generateAndPublishProof(
   if (entries.length === 0) throw new Error(`No valid checkpoints for ${sessionId}`);
 
   const html = generateProofHtml(sessionId, walletAddress, entries);
-  // Use text/html so browsers render the proof page instead of showing raw source
-  const proofBlobId = await storeBlob(html, 53, "text/html");
+  const proofBlobId = await storeBlob(html, 53, "text/html; charset=utf-8");
 
   return {
     proofBlobId,
