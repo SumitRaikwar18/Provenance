@@ -47,5 +47,6 @@ export function getPublicSealConfig(): PublicSealConfig {
 
 export function isSealThresholdConfigured() {
   const config = getPublicSealConfig();
-  return config.enabled && config.threshold > 0 && config.threshold <= config.keyServers.length;
+  const totalWeight = config.keyServers.reduce((sum, server) => sum + server.weight, 0);
+  return config.enabled && config.threshold > 0 && config.threshold <= totalWeight;
 }

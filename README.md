@@ -91,20 +91,22 @@ The project includes the on-chain access-control policy needed by Seal:
 
 - Move package: `move/provenance_seal`
 - Module: `provenance_seal::provenance_private`
+- Testnet package ID: `0x490d372b955a11c6e0bf0b1af43c5b66c3b3b190f68268907fdf4f463987b49a`
+- Publish transaction: `7wTXSJseRiRWWkPf57kmWQCDA75T6gznwjzbUASmR6E2`
 - Approval function: `seal_approve(id: vector<u8>, key: &CheckpointKey)`
 - Policy: only the creator-owned `CheckpointKey` with the matching `creator + session_id + nonce` can approve key access.
 
-Current working mode is browser AES-GCM encryption. Full Seal threshold mode requires deployment of the Move package and public Seal key-server configuration:
+Current working mode is browser AES-GCM encryption with deployed Seal policy metadata. Full Seal threshold encryption uses the deployed package and the verified Testnet committee key server configuration:
 
 ```env
 NEXT_PUBLIC_SEAL_ENABLED=true
-NEXT_PUBLIC_SEAL_PACKAGE_ID=0x_first_version_package_id
+NEXT_PUBLIC_SEAL_PACKAGE_ID=0x490d372b955a11c6e0bf0b1af43c5b66c3b3b190f68268907fdf4f463987b49a
 NEXT_PUBLIC_SEAL_MODULE=provenance_private
-NEXT_PUBLIC_SEAL_THRESHOLD=2
-NEXT_PUBLIC_SEAL_KEY_SERVERS=[{"objectId":"0x_key_server_1","weight":1,"aggregatorUrl":"https://..."},{"objectId":"0x_key_server_2","weight":1,"aggregatorUrl":"https://..."}]
+NEXT_PUBLIC_SEAL_THRESHOLD=3
+NEXT_PUBLIC_SEAL_KEY_SERVERS=[{"objectId":"0xb012378c9f3799fb5b1a7083da74a4069e3c3f1c93de0b27212a5799ce1e1e98","weight":5,"aggregatorUrl":"https://seal-aggregator-testnet.mystenlabs.com"}]
 ```
 
-The app records Seal readiness metadata with each encrypted payload. Until those values are configured after deployment, it safely falls back to wallet-session AES-GCM encryption.
+The app records Seal readiness metadata with each encrypted payload. If the Seal environment is absent, it safely falls back to wallet-session AES-GCM encryption.
 
 ## Stack
 
@@ -180,8 +182,10 @@ npm run seal:build
 - `npm run type-check` passes.
 - `npm run build` passes.
 - `npm audit --omit=dev` reports zero production vulnerabilities.
+- `npm run seal:build` passes.
+- `move/provenance_seal` is published on Sui Testnet at `0x490d372b955a11c6e0bf0b1af43c5b66c3b3b190f68268907fdf4f463987b49a`.
 - Real live checkpoint, MemWal recall, session share, and proof publishing depend on valid MemWal delegate credentials and Walrus Testnet availability.
-- Full Seal threshold access control requires deploying `move/provenance_seal` and setting the public Seal env vars.
+- Full Seal threshold encryption still requires wiring `@mysten/seal` encrypt/decrypt calls into the dashboard runtime; the access-control package and public key-server config are now ready.
 
 ## License
 
