@@ -339,8 +339,24 @@ Anyone can verify a generated proof page independently using raw tools.
 - [x] **State Persistence:** MemWal keeps track of all checkpoint links.
 - [x] **File Portability:** Checkpoint files and proof HTML pages are saved on Walrus, readable anywhere.
 - [x] **AI Workflow:** AI agent analyzes writing progress and saves thoughts to the delegate's memory.
-- [x] **Sui Integration:** Identity bound to the user's active wallet account.
+- [x] **Sui Integration:** Current dApp Kit wallet connection and Sui Testnet identity in the UI.
+- [ ] **Signed Authorship:** Server-side personal-message signature verification is required before claiming cryptographic wallet ownership.
 - [x] **Aesthetic UI:** Complete responsiveness with customized dark mode.
+
+---
+
+## Verified Testnet Status
+
+The following flow was exercised against real services on June 18, 2026:
+
+- Walrus checkpoint upload returned a real blob ID.
+- MemWal recalled the checkpoint from the session namespace.
+- The writing agent analyzed the recalled Walrus content.
+- A shareable session manifest was published to Walrus.
+- A self-contained proof page was published to Walrus.
+- `npm run type-check` and `npm run build` pass on Next.js 14.2.35.
+
+See [AUDIT_REPORT.md](./AUDIT_REPORT.md) for security findings, hackathon scoring, remaining blockers, and recommended submission priorities.
 
 ---
 
