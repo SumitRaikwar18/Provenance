@@ -191,20 +191,6 @@ npm run seal:build
 | `POST /api/session-share` | Publish a portable session manifest to Walrus. |
 | `POST /api/agent/analyze` | Recall memory, analyze session history, compare past sessions, store agent insight. |
 
-## Submission Demo Script
-
-Target length: 4 to 5 minutes.
-
-1. **Problem, 20 seconds:** AI writing agents lose long-term context and cannot prove how a piece of writing evolved.
-2. **Solution, 25 seconds:** Provenance turns a writing session into encrypted Walrus artifacts, MemWal memory, Sui wallet authorship, and a public proof page.
-3. **Landing page, 25 seconds:** Show the homepage, tagline, Walrus/MemWal/Sui positioning, and click the wallet connect CTA.
-4. **Wallet identity, 30 seconds:** Connect a Sui wallet and show the redirect into the dashboard.
-5. **Checkpoint creation, 45 seconds:** Type a short draft, trigger a checkpoint, and show the checkpoint log with word count and Walrus blob ID.
-6. **Memory agent, 55 seconds:** Run the AI Writing Agent and show themes, style notes, cross-session memory, next actions, and reusable brief.
-7. **Proof publishing, 45 seconds:** Generate a proof page, open the Walrus proof URL, and show the verification/integrity section.
-8. **Technical proof, 35 seconds:** Briefly show the README architecture and the deployed Seal package ID on Sui Testnet.
-9. **Close, 20 seconds:** Explain why this matters for the Walrus Track: portable memory, durable files, verifiable artifacts, and a product path beyond the hackathon.
-
 ## Verification Status
 
 - `npm run type-check` passes.
