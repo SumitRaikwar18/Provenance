@@ -3,6 +3,8 @@ import { fetchBlob } from "@/lib/walrus";
 import { recallSession, sessionNamespace } from "@/lib/memwal";
 import { MemWal } from "@mysten-incubation/memwal";
 import type { Checkpoint } from "@/types";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { requireSessionAuth } from "@/lib/server-auth";
 
 export interface AgentInsight {
   themes: string[];
@@ -92,7 +94,14 @@ Return ONLY valid JSON, no markdown fences.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, walletAddress } = await req.json();
+    const limited = enforceRateLimit(req, { bucket: "agent", limit: 10, windowMs: 60_000 });
+    if (limited) return limited;
+
+    const body = await req.json();
+    const authError = await requireSessionAuth(body);
+    if (authError) return authError;
+
+    const { sessionId, walletAddress } = body;
 
     if (!sessionId || !walletAddress) {
       return NextResponse.json({ success: false, error: "Missing sessionId or walletAddress" }, { status: 400 });

@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recallSession } from "@/lib/memwal";
 import { generateAndPublishProof } from "@/lib/proof-generator";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { requireSessionAuth } from "@/lib/server-auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, walletAddress } = await req.json();
+    const limited = enforceRateLimit(req, { bucket: "proof", limit: 8, windowMs: 60_000 });
+    if (limited) return limited;
+
+    const body = await req.json();
+    const authError = await requireSessionAuth(body);
+    if (authError) return authError;
+
+    const { sessionId, walletAddress } = body;
 
     if (!sessionId || !walletAddress) {
       return NextResponse.json({ success: false, error: "Missing sessionId or walletAddress" }, { status: 400 });

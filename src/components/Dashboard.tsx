@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDAppKit, useCurrentWallet, useWalletConnection } from "@mysten/dapp-kit-react";
 import { ConnectModal } from "@mysten/dapp-kit-react/ui";
 import { nanoid } from "nanoid";
+import { buildSessionAuthMessage, type SessionAuth } from "@/lib/auth-message";
 import { countWords, extractTitle, formatDate, formatTime, truncateAddress } from "@/lib/client-text";
 import type { CheckpointResponse, ProofResponse, Session } from "@/types";
 
@@ -157,6 +158,7 @@ export function Dashboard() {
   const contentRef = useRef(content);
   const cpIndexRef = useRef(checkpointIndex);
   const savingRef = useRef(false);
+  const sessionAuthRef = useRef<SessionAuth | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { contentRef.current = content; }, [content]);
@@ -228,6 +230,27 @@ export function Dashboard() {
 
   useEffect(() => { loadStorage(); }, [loadStorage]);
 
+  const getSessionAuth = useCallback(async (): Promise<SessionAuth> => {
+    const current = sessionAuthRef.current;
+    if (current && Date.now() - current.signedAt < 23 * 60 * 60 * 1000) {
+      return current;
+    }
+
+    const signedAt = Date.now();
+    const message = buildSessionAuthMessage(sessionId, walletAddress, signedAt);
+    const signed = await dAppKit.signPersonalMessage({
+      message: new TextEncoder().encode(message),
+    });
+
+    const auth: SessionAuth = {
+      message,
+      signature: signed.signature,
+      signedAt,
+    };
+    sessionAuthRef.current = auth;
+    return auth;
+  }, [dAppKit, sessionId, walletAddress]);
+
   // ─── Seal Checkpoint ──────────────────────────────────────────────────────
   const sealCheckpoint = useCallback(async () => {
     if (contentRef.current.trim() === "" || savingRef.current) return;
@@ -235,6 +258,7 @@ export function Dashboard() {
     setTickerState("saving");
 
     try {
+      const auth = await getSessionAuth();
       const res = await fetch("/api/checkpoint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -243,6 +267,7 @@ export function Dashboard() {
           content: contentRef.current,
           checkpointIndex: cpIndexRef.current,
           walletAddress,
+          auth,
         }),
       });
 
@@ -283,7 +308,7 @@ export function Dashboard() {
       setNextSaveIn(INTERVAL / 1000);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, walletAddress, saveSession, agentState, showToast]);
+  }, [sessionId, walletAddress, saveSession, agentState, showToast, getSessionAuth]);
 
   // ─── Timer ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -326,10 +351,11 @@ export function Dashboard() {
       setAgentStrings(localInsights);
 
       try {
+        const auth = await getSessionAuth();
         const res = await fetch("/api/agent/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, walletAddress }),
+          body: JSON.stringify({ sessionId, walletAddress, auth }),
         });
         const data = await res.json();
         if (data.success && data.insight) {
@@ -344,7 +370,7 @@ export function Dashboard() {
         setAgentState("done");
       }
     },
-    [checkpoints, sessionId, walletAddress],
+    [checkpoints, sessionId, walletAddress, getSessionAuth],
   );
 
   // ─── Generate Proof ───────────────────────────────────────────────────────
@@ -352,10 +378,11 @@ export function Dashboard() {
     if (checkpoints.length === 0 || proofState === "generating") return;
     setProofState("generating");
     try {
+      const auth = await getSessionAuth();
       const res = await fetch("/api/proof", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, walletAddress }),
+        body: JSON.stringify({ sessionId, walletAddress, auth }),
       });
       if (!res.ok) throw new Error(`API ${res.status}`);
       const data = (await res.json()) as ProofResponse;
@@ -372,7 +399,7 @@ export function Dashboard() {
       showToast("Proof generation failed", "err");
       setTimeout(() => setProofState("idle"), 4000);
     }
-  }, [checkpoints, proofState, sessionId, walletAddress, saveProof, showToast]);
+  }, [checkpoints, proofState, sessionId, walletAddress, saveProof, showToast, getSessionAuth]);
 
   // ─── New Session ──────────────────────────────────────────────────────────
   const startNewSession = useCallback(() => {
@@ -387,6 +414,7 @@ export function Dashboard() {
     setAgentInsights(null);
     setAgentStrings([]);
     setAgentState("idle");
+    sessionAuthRef.current = null;
     setPanel("editor");
     showToast("New session started");
   }, [showToast]);
@@ -620,6 +648,10 @@ export function Dashboard() {
                   </div>
                   <div className="stat-sub ok">Connected · Testnet</div>
                 </div>
+              </div>
+
+              <div className="public-storage-note">
+                Public Testnet mode: sealed checkpoints are permanent Walrus blobs. Do not paste private drafts here until Seal encryption is enabled.
               </div>
 
               {/* Editor section */}

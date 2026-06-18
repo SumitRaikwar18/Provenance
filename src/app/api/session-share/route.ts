@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blobUrl, storeBlob } from "@/lib/walrus";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { requireSessionAuth } from "@/lib/server-auth";
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = enforceRateLimit(req, { bucket: "session-share", limit: 12, windowMs: 60_000 });
+    if (limited) return limited;
+
     const body = await req.json();
+    const authError = await requireSessionAuth(body);
+    if (authError) return authError;
+
     const { sessionId, walletAddress, title, wordCount, checkpointCount, checkpoints, proofUrl } = body;
 
     if (!sessionId || !walletAddress || !Array.isArray(checkpoints)) {
       return NextResponse.json({ success: false, error: "Missing required session fields" }, { status: 400 });
+    }
+
+    if (checkpoints.length > 250) {
+      return NextResponse.json({ success: false, error: "Session manifest exceeds 250 checkpoints" }, { status: 413 });
     }
 
     const manifest = {

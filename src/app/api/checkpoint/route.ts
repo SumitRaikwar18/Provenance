@@ -2,20 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildCheckpoint } from "@/lib/checkpoint";
 import { storeCheckpointMemory } from "@/lib/memwal";
 import { storeBlob } from "@/lib/walrus";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { requireSessionAuth } from "@/lib/server-auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, walletAddress, content, checkpointIndex } = await req.json();
+    const limited = enforceRateLimit(req, { bucket: "checkpoint", limit: 30, windowMs: 60_000 });
+    if (limited) return limited;
+
+    const body = await req.json();
+    const authError = await requireSessionAuth(body);
+    if (authError) return authError;
+
+    const { sessionId, walletAddress, content, checkpointIndex } = body;
 
     if (!sessionId || !walletAddress || content === undefined || checkpointIndex === undefined) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    if (String(content).trim() === "") {
+    const contentText = String(content);
+    if (contentText.length > 100_000) {
+      return NextResponse.json({ success: false, error: "Content exceeds 100,000 characters" }, { status: 413 });
+    }
+
+    if (contentText.trim() === "") {
       return NextResponse.json({ success: false, error: "Content is empty" }, { status: 400 });
     }
 
-    const checkpoint = buildCheckpoint(sessionId, walletAddress, Number(checkpointIndex), String(content));
+    const checkpoint = buildCheckpoint(sessionId, walletAddress, Number(checkpointIndex), contentText);
     const blobId = await storeBlob(JSON.stringify(checkpoint), 5);
 
     await storeCheckpointMemory({

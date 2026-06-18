@@ -1061,6 +1061,17 @@ a { text-decoration: none; color: inherit }
 #page-dashboard .stat-sub.ok { color: var(--walrus); }
 #page-dashboard .stat-sub.warn { color: var(--amber); }
 
+#page-dashboard .public-storage-note {
+  margin: 0 1.5rem 1rem;
+  padding: .8rem 1rem;
+  border: 1px solid rgba(251, 191, 36, .28);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, .08);
+  color: #f8e6b0;
+  font-size: .78rem;
+  line-height: 1.55;
+}
+
 #page-dashboard .editor-wrap { padding: 0 1.5rem 1.5rem; display: flex; flex-direction: column; gap: .9rem; }
 
 /* Editor card */

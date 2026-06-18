@@ -356,17 +356,15 @@ The following flow was exercised against real services on June 18, 2026:
 - A self-contained proof page was published to Walrus.
 - `npm run type-check` and `npm run build` pass on Next.js 14.2.35.
 
-Security and hackathon-readiness review status is summarized below. The detailed audit report is kept locally under `.superstack/security-reports/` and is intentionally not committed because it contains internal remediation notes.
+Security and hackathon-readiness review status is summarized below.
 
 ### Current Audit Status
 
-- **Working Testnet path:** wallet UI, checkpoint upload, MemWal recall, agent analysis, session share, and proof publishing have been smoke-tested against real services.
-- **Primary blocker before judging:** server API routes still trust a submitted `walletAddress`; add Sui personal-message signature verification before claiming strong wallet-bound authorship.
+- **Working Testnet path:** wallet UI, signed session authorization, checkpoint upload, MemWal recall, agent analysis, session share, and proof publishing have been smoke-tested against real services.
+- **Authorship:** server API routes verify a Sui personal-message signature before writing checkpoints, running agent analysis, publishing session manifests, or generating proofs.
 - **Privacy note:** checkpoints are public Walrus blobs by design in the current build. Add Seal encryption or an explicit public-content warning for private drafts.
-- **Operations note:** public API routes should get rate limiting, request-size caps, and abuse quotas before public deployment.
+- **Operations note:** write/costly API routes include basic rate limits and request-size caps; production deployment should add persistent edge quotas.
 - **Dependency note:** Next.js is patched to `14.2.35`; `npm audit --omit=dev` still reports advisories that require a future major Next upgrade.
-
-See [DEMO_VIDEO_STEPS.md](./DEMO_VIDEO_STEPS.md) for the recommended 3-minute submission video flow.
 
 ---
 
