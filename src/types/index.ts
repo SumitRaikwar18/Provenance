@@ -21,6 +21,14 @@ export interface EncryptedPayload {
   iv: string;
   salt: string;
   aad: string;
+  seal?: {
+    status: "configured" | "fallback";
+    packageId?: string;
+    moduleName?: string;
+    threshold?: number;
+    keyServerCount?: number;
+    policy?: "creator-owned-checkpoint-key";
+  };
 }
 
 export interface CheckpointMemory {

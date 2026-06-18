@@ -1,374 +1,188 @@
-# 🔏 Provenance
+# Provenance
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Provenance-Your%20Writing%2C%20Cryptographically%20Proven-4DA2FF?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==" alt="Provenance">
-</p>
+**Your writing, cryptographically proven.**
 
-<p align="center">
-  <strong>Your writing, cryptographically proven. 🖊️✨</strong><br/>
-  <em>An Agentic Co-Writer Powered by Sui, Walrus, & MemWal</em>
-</p>
+Provenance is a private, verifiable memory layer for long-running writing agents. It encrypts writing checkpoints in the browser, stores durable artifacts on Walrus, indexes session memory in MemWal, ties authorship to a Sui wallet, and publishes shareable proof pages that anyone can independently verify.
 
-<p align="center">
-  <a href="https://sui.io"><img alt="Sui" src="https://img.shields.io/badge/Sui-Testnet-4DA2FF?style=for-the-badge&logo=sui&logoColor=white"></a>
-  <a href="https://walrus.xyz"><img alt="Walrus" src="https://img.shields.io/badge/Walrus-Permanent%20Blobs-3B6FD4?style=for-the-badge&logoColor=white"></a>
-  <a href="https://memwal.ai"><img alt="MemWal" src="https://img.shields.io/badge/MemWal-Agent%20Memory-1D8A5E?style=for-the-badge&logoColor=white"></a>
-  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-14-1A1A2E?style=for-the-badge&logo=next.js&logoColor=white">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
-</p>
+Built for the **Sui Overflow 2026 Walrus Track**.
 
-<p align="center">
-  <a href="#-what-is-provenance">Overview</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-data-flow">Data Flow</a> •
-  <a href="#-ai-agent-integration">AI Agent Flow</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-api-reference">API Documentation</a> •
-  <a href="#-verification">Verification</a>
-</p>
+## Clear Pitch
 
----
+AI writing tools are useful, but they usually lose the process. Provenance makes the process portable and verifiable. A writer connects a Sui wallet, writes normally, and Provenance creates encrypted checkpoints over time. Those checkpoints become permanent Walrus blobs, their chain is remembered through MemWal, and a memory agent can recover context across sessions, summarize progress, suggest next actions, and generate a reusable writing brief.
 
-## 🌟 What is Provenance?
+For judges, the product demonstrates the exact Walrus Track thesis: agents become more useful when memory is durable, portable, and verifiable instead of trapped inside one app session.
 
-**Provenance** is a full-stack Next.js application that provides writers, researchers, and creators with a **verifiable, tamper-proof audit trail** of their document's creation history. In an era dominated by AI-generated content, **the process is the proof**. Provenance records your creative journey in real-time, anchoring checkpoints to your Sui wallet, saving files on Walrus, and persisting state across sessions using MemWal.
+## Why It Can Compete
 
-Built for the **🏆 Sui Overflow 2026 — Walrus Track**, Provenance demonstrates how decentralized data and agentic memory systems can cooperate to create verifiable workflows.
+| Judging Area | Provenance Answer |
+| --- | --- |
+| Product and UX | Polished wallet-gated landing page, responsive dashboard, editor, proof modal, session history, proofs, and agent panel. |
+| Real-world application | Solves authorship, draft provenance, AI-era transparency, long-running writing context, and shareable proof of work. |
+| Technical implementation | Sui wallet identity, signed route authorization, Walrus permanent blob storage, MemWal memory recall, encrypted checkpoints, proof publishing, and a Seal access-control Move package. |
+| Presentation and vision | Clear path from hackathon demo to private creative memory infrastructure for writers, researchers, teams, and agent workflows. |
 
-### ✨ Key Features
+## Core Features
 
-| Feature | Technical Implementation |
-|--------|--------------------------|
-| 🔑 **Sui Wallet Identity** | User authentication anchored to Sui testnet addresses via `@mysten/dapp-kit-react` |
-| 📝 **Focused Editor** | Distraction-free, responsive dark-mode text editor with real-time statistics |
-| ⏱️ **Encrypted Auto-Seal Checkpoints** | Draft states are encrypted in-browser, then sealed as permanent content-addressed JSON blobs on Walrus |
-| 🧠 **Verifiable Memory Chains** | Sequential history links stored in MemWal session namespaces (`provenance:{sessionId}`) |
-| 🤖 **Cross-Session Memory Agent** | Background intelligence analyzing writing velocity, themes, style, cross-session patterns, next actions, and reusable briefs |
-| 📄 **Shareable Proof Pages** | Self-contained, beautiful verification HTML pages served as raw `text/html` from Walrus |
-| 🔍 **Independent Auditing** | Verify any proof page independently using only public Walrus aggregators and SHA-256 hashes |
+- Sui wallet identity through the current Mysten dApp Kit packages.
+- Sui personal-message signatures for server-side authorship authorization.
+- Browser AES-GCM encryption before checkpoint upload, so public Walrus blobs do not contain plaintext drafts.
+- Walrus Testnet checkpoint, proof, and session-manifest publishing.
+- MemWal checkpoint indexing under `provenance:{sessionId}` namespaces.
+- Cross-session writing memory agent with themes, style notes, next actions, and reusable briefs.
+- Shareable proof pages that fetch and verify checkpoint blobs through a public Walrus aggregator.
+- Sui Move Seal policy package under `move/provenance_seal`.
 
----
-
-## 🏗️ Architecture
-
-The block diagram below showcases the interaction between the Client, API, Decentralized Storage (Walrus), Agent Memory (MemWal), and LLM layer.
+## Architecture
 
 ```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "primaryColor": "#1e1b4b",
-    "primaryTextColor": "#e0e7ff",
-    "primaryBorderColor": "#6366f1",
-    "lineColor": "#a5b4fc",
-    "secondaryColor": "#0f172a",
-    "tertiaryColor": "#0c4a6e",
-    "background": "#0f172a",
-    "fontFamily": "Inter, sans-serif",
-    "fontSize": "14px",
-    "edgeLabelBackground": "#1e1b4b",
-    "clusterBkg": "#020617",
-    "titleColor": "#a5b4fc"
-  }
-}}%%
-flowchart TB
-  subgraph CLIENT["🖥️ Client Layer (Next.js App)"]
-    direction LR
-    User["👤 Writer"]
-    Wallet["🔑 Sui Wallet Connect"]
-    Dashboard["📊 Dashboard UI"]
-    Editor["✍️ Focused Editor"]
-  end
-
-  subgraph API["⚙️ API Layer (Route Handlers)"]
-    direction TB
-    CheckAPI["📌 POST /api/checkpoint"]
-    ProofAPI["📄 POST /api/proof"]
-    AgentAPI["🤖 POST /api/agent/analyze"]
-    ShareAPI["🔗 POST /api/session-share"]
-  end
-
-  subgraph WALRUS["🌊 Walrus Storage Network (Decentralized Blobs)"]
-    direction LR
-    WalrusCP["📦 Checkpoint JSONs"]
-    WalrusProof["🏅 Proof HTML Page"]
-    WalrusManifest["📋 Session Manifest"]
-  end
-
-  subgraph MEMWAL["🧠 MemWal (Agent Memory Layer)"]
-    direction LR
-    MemSession["🗂️ Session Namespace"]
-    MemChain["🔗 Checkpoint Index Chain"]
-    AgentMem["🤖 Agent Analysis Memory"]
-  end
-
-  subgraph LLM["🤖 LLM Layer"]
-    OpenAI["GPT-4o-mini"]
-  end
-
-  User --> Wallet
-  Wallet --> Dashboard
-  Dashboard --> Editor
-  Editor --> CheckAPI
-  Dashboard --> AgentAPI
-  Dashboard --> ProofAPI
-  Dashboard --> ShareAPI
-
-  CheckAPI --> WalrusCP
-  CheckAPI --> MemSession
-  MemSession --> MemChain
-
-  AgentAPI --> MemChain
-  AgentAPI --> WalrusCP
-  AgentAPI --> OpenAI
-  AgentAPI --> AgentMem
-
-  ProofAPI --> MemChain
-  ProofAPI --> WalrusCP
-  ProofAPI --> WalrusProof
-
-  style CLIENT fill:#1e1b4b,stroke:#6366f1,color:#e0e7ff
-  style API fill:#0c4a6e,stroke:#0ea5e9,color:#e0f2fe
-  style WALRUS fill:#0d3b2e,stroke:#10b981,color:#d1fae5
-  style MEMWAL fill:#2d1b4e,stroke:#a855f7,color:#ede9fe
-  style LLM fill:#451a03,stroke:#f97316,color:#ffedd5
+flowchart LR
+  Writer["Writer"] --> Wallet["Sui Wallet"]
+  Wallet --> UI["Next.js Dashboard"]
+  UI --> Encrypt["Browser Encryption"]
+  Encrypt --> API["Next.js API Routes"]
+  API --> Walrus["Walrus Permanent Blobs"]
+  API --> MemWal["MemWal Memory Index"]
+  MemWal --> Agent["Memory Agent"]
+  Walrus --> Proof["Shareable Proof Page"]
+  Agent --> MemWal
 ```
 
----
-
-## 🌊 Data Flow
-
-This sequence diagram illustrates the lifecycle of a writing session, starting from wallet connection through to checkpoint sealing, LLM agent analysis, and proof publishing.
+## Checkpoint Flow
 
 ```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "primaryColor": "#0f172a",
-    "primaryTextColor": "#f1f5f9",
-    "primaryBorderColor": "#38bdf8",
-    "lineColor": "#22d3ee",
-    "secondaryColor": "#164e63",
-    "tertiaryColor": "#0d3b2e",
-    "noteBkgColor": "#1e293b",
-    "noteTextColor": "#e2e8f0",
-    "activationBorderColor": "#818cf8",
-    "activationBkgColor": "#1e1b4b",
-    "fontFamily": "Inter, sans-serif"
-  }
-}}%%
 sequenceDiagram
-  autonumber
-  actor User as 👤 Writer
-  participant UI as 🖥️ Next.js UI
-  participant API as ⚙️ API Route
-  participant Walrus as 🌊 Walrus
-  participant MemWal as 🧠 MemWal
-  participant LLM as 🤖 OpenAI
+  actor U as Writer
+  participant W as Sui Wallet
+  participant UI as Provenance UI
+  participant API as API Route
+  participant R as Walrus
+  participant M as MemWal
 
-  User->>UI: Connect Sui Wallet
-  UI-->>User: Connected (0x...)
-
-  Note over User,LLM: ✍️ Editor Auto-Save Flow
-  loop Every 60s (or manual "Seal Now")
-    User->>UI: Types document content
-    UI->>API: POST /api/checkpoint {content, sessionId, index}
-    API->>Walrus: Store raw draft blob (Content-Type: application/json)
-    Walrus-->>API: returns blobId
-    API->>MemWal: remember(checkpointDetails, namespace)
-    MemWal-->>API: Memory certified ✅
-    API-->>UI: returns {blobId, timestamp, index, wordCount}
-    UI->>UI: Log checkpoint locally & update state
-  end
-
-  Note over User,LLM: 🤖 AI Writing Agent Intelligence
-  UI->>API: POST /api/agent/analyze {sessionId}
-  API->>MemWal: recallSession(sessionId)
-  MemWal-->>API: returns ordered blobIds
-  API->>Walrus: Fetch latest checkpoint contents
-  Walrus-->>API: returns raw text excerpts
-  API->>LLM: Analyze writing evolution & style
-  LLM-->>API: returns structured JSON analysis
-  API->>MemWal: remember(agentInsights, namespace)
-  MemWal-->>API: Memory certified ✅
-  API-->>UI: returns {themes, styleNotes, agentSummary}
-  UI-->>User: Display agent insights in dashboard panel
-
-  Note over User,LLM: 🏅 Verifiable Proof Publishing
-  User->>UI: Click "Generate Proof"
-  UI->>API: POST /api/proof {sessionId}
-  API->>MemWal: recallSession(sessionId)
-  MemWal-->>API: returns checkpoint chain
-  API->>Walrus: Fetch all checkpoints
-  Walrus-->>API: returns document history
-  API->>API: Compile self-contained proof page with SHA-256 integrity logs
-  API->>Walrus: Store proof page (Content-Type: text/html)
-  Walrus-->>API: returns proofBlobId
-  API-->>UI: returns proofUrl (permanent link)
-  UI-->>User: Open & share cryptographic proof page!
+  U->>W: Connect wallet
+  UI->>W: Request signed session authorization
+  W-->>UI: Personal-message signature
+  U->>UI: Write draft
+  UI->>UI: Encrypt draft with AES-GCM
+  UI->>API: POST /api/checkpoint
+  API->>API: Verify Sui signature
+  API->>R: Store permanent checkpoint blob
+  R-->>API: blobId
+  API->>M: remember(blobId, namespace)
+  API-->>UI: checkpoint result
 ```
 
----
+## Agentic Memory Flow
 
-## 🤖 AI Agent Integration
-
-Provenance fulfills the requirements of the Walrus Track by introducing a **Writing Intelligence Agent** powered by a persistent, verifiable memory stack:
-
-1. **Memory Recovery:** When a session is loaded, the agent queries MemWal to reconstruct the history of writing milestones.
-2. **Context Assembly:** It retrieves actual draft contents from the decentralized Walrus storage network using content-addressed blob IDs.
-3. **LLM Reasoning:** Excerpts are passed to a customized model prompt designed to evaluate creative progress, style modifications, argument developments, and writing speed.
-4. **Verifiable Storage:** The agent's output is recorded back to MemWal inside the session namespace, ensuring the agent's insights are portable and auditable.
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js ≥ 18
-- A Sui-compatible wallet browser extension (Sui Wallet, Slush, etc.)
-- A [MemWal delegate account key](https://memwal.ai)
-
-### 1. Clone & Install
-```bash
-git clone https://github.com/SumitRaikwar18/Provenance.git
-cd Provenance
-npm install
+```mermaid
+flowchart TB
+  Session["Current Session"] --> Recall["Recall MemWal checkpoints"]
+  Past["Past Local Sessions"] --> Recall
+  Recall --> Blobs["Fetch Walrus checkpoint metadata"]
+  Blobs --> Agent["Writing Memory Agent"]
+  Agent --> Patterns["Cross-session patterns"]
+  Agent --> Actions["Next actions"]
+  Agent --> Brief["Reusable writing brief"]
+  Agent --> Store["Store agent insight in MemWal"]
 ```
 
-### 2. Configure Environment Variables
-Create a `.env.local` file in the root directory:
+## Seal Privacy Path
+
+The project includes the on-chain access-control policy needed by Seal:
+
+- Move package: `move/provenance_seal`
+- Module: `provenance_seal::provenance_private`
+- Approval function: `seal_approve(id: vector<u8>, key: &CheckpointKey)`
+- Policy: only the creator-owned `CheckpointKey` with the matching `creator + session_id + nonce` can approve key access.
+
+Current working mode is browser AES-GCM encryption. Full Seal threshold mode requires deployment of the Move package and public Seal key-server configuration:
+
 ```env
-# MemWal Agent Memory (Server-Side Only)
-MEMWAL_KEY=your_memwal_delegate_private_key_hex
+NEXT_PUBLIC_SEAL_ENABLED=true
+NEXT_PUBLIC_SEAL_PACKAGE_ID=0x_first_version_package_id
+NEXT_PUBLIC_SEAL_MODULE=provenance_private
+NEXT_PUBLIC_SEAL_THRESHOLD=2
+NEXT_PUBLIC_SEAL_KEY_SERVERS=[{"objectId":"0x_key_server_1","weight":1,"aggregatorUrl":"https://..."},{"objectId":"0x_key_server_2","weight":1,"aggregatorUrl":"https://..."}]
+```
+
+The app records Seal readiness metadata with each encrypted payload. Until those values are configured after deployment, it safely falls back to wallet-session AES-GCM encryption.
+
+## Stack
+
+- Next.js 16, React 18, TypeScript, Tailwind CSS
+- `@mysten/dapp-kit-react`, `@mysten/dapp-kit-core`, `@mysten/sui`
+- `@mysten/walrus`
+- `@mysten-incubation/memwal`
+- `@mysten/seal`
+
+## Environment
+
+Create `.env.local` from `.env.example`.
+
+```env
+MEMWAL_KEY=your_delegate_private_key_hex
 MEMWAL_ACCOUNT_ID=0x_your_memwal_account_id
 MEMWAL_SERVER_URL=https://relayer.memory.walrus.xyz
 
-# Walrus API endpoints
 WALRUS_PUBLISHER=https://publisher.walrus-testnet.walrus.space
 WALRUS_AGGREGATOR=https://aggregator.walrus-testnet.walrus.space
 
-# AI Agent Configuration
-OPENAI_API_KEY=your_openai_api_key
-
-# Public (Browser-Safe)
 NEXT_PUBLIC_WALRUS_AGGREGATOR=https://aggregator.walrus-testnet.walrus.space
 NEXT_PUBLIC_APP_NAME=Provenance
 NEXT_PUBLIC_DEMO_MODE=true
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-> [!WARNING]
-> Keep `.env.local` out of your git commits. The `MEMWAL_KEY` and `OPENAI_API_KEY` are sensitive keys and should never be exposed to the client.
 
-### 3. Launch Development Server
+OPENAI_API_KEY=your_openai_api_key
+```
+
+Never commit `.env.local`. Server secrets such as `MEMWAL_KEY` and `OPENAI_API_KEY` must stay server-side.
+
+## Run Locally
+
 ```bash
+npm install
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the application.
 
----
+Open [http://localhost:3000](http://localhost:3000).
 
-## 📡 API Reference
+## Useful Commands
 
-### `POST /api/checkpoint`
-Seals a new writing checkpoint to Walrus and records its reference in MemWal.
-```json
-{
-  "sessionId": "xY8zW2",
-  "walletAddress": "0x7a23...b9c1",
-  "content": "This is the updated draft text...",
-  "checkpointIndex": 1
-}
-```
-**Response:**
-```json
-{
-  "success": true,
-  "blobId": "M4hsZGQ1oCVZt-e3s...W7_4BUk",
-  "timestamp": "2026-06-17T06:00:00.000Z",
-  "checkpointIndex": 1,
-  "wordCount": 7
-}
+```bash
+npm run type-check
+npm run build
+npm audit --omit=dev
+npm run seal:build
 ```
 
-### `POST /api/agent/analyze`
-Triggers the AI agent to read Walrus files, compile the history, analyze progress, and store memory.
-```json
-{
-  "sessionId": "xY8zW2",
-  "walletAddress": "0x7a23...b9c1"
-}
-```
-**Response:**
-```json
-{
-  "success": true,
-  "insight": {
-    "themes": ["Cryptographic accountability", "Decentralized state systems"],
-    "styleNotes": "The user writes with a formal, academic tone using active voice constructions.",
-    "paceSummary": "Writing momentum is consistent, adding roughly 7 words per checkpoint.",
-    "keyIdeas": ["Decentralization of memory structures", "Walrus as an auditing back-bone"],
-    "agentSummary": "Your thesis is shaping up beautifully. The structural transition between checkpoints 1 and 2 shows strong reasoning.",
-    "analyzedAt": "2026-06-17T06:01:00.000Z",
-    "checkpointCount": 2
-  }
-}
-```
+## API Surface
 
----
+| Route | Purpose |
+| --- | --- |
+| `POST /api/checkpoint` | Verify wallet signature, build checkpoint JSON, store to Walrus, remember in MemWal. |
+| `GET /api/recall?sessionId=...` | Recall checkpoint memory chain for a session. |
+| `POST /api/proof` | Recall checkpoints, fetch Walrus blobs, generate proof HTML, publish proof to Walrus. |
+| `POST /api/session-share` | Publish a portable session manifest to Walrus. |
+| `POST /api/agent/analyze` | Recall memory, analyze session history, compare past sessions, store agent insight. |
 
-## ✅ Verification & Auditing
+## Submission Demo Script
 
-Anyone can verify a generated proof page independently using raw tools.
+1. Open the landing page and explain the problem: AI writing agents lose durable memory and cannot prove the writing process.
+2. Connect a Sui wallet and show redirect into the dashboard.
+3. Write a short draft and click **Seal Now** or wait for the demo checkpoint cadence.
+4. Open the checkpoint log and show the Walrus blob ID.
+5. Run the AI Writing Agent and show recovered themes, cross-session memory, next actions, and reusable brief.
+6. Generate a proof page and open the Walrus proof URL.
+7. Show that the proof page verifies checkpoints through public Walrus blob references.
+8. Disconnect the wallet and show redirect back to the landing page.
 
-1. Open the proof's public Walrus aggregator URL.
-2. In the *Integrity Log*, copy any target `Blob ID` and the expected `SHA-256 Hash`.
-3. Fetch the raw blob from the aggregator:
-   ```bash
-   curl https://aggregator.walrus-testnet.walrus.space/v1/blobs/<Blob-ID>
-   ```
-4. Verify the `content` field of the returned JSON. Compute its SHA-256 hash:
-   ```bash
-   echo -n "<Content-Text>" | shasum -a 256
-   ```
-5. Compare the output to the expected hash displayed on the proof page. If they match, the proof is authentic and un-tampered.
+## Verification Status
 
----
+- `npm run type-check` passes.
+- `npm run build` passes.
+- `npm audit --omit=dev` reports zero production vulnerabilities.
+- Real live checkpoint, MemWal recall, session share, and proof publishing depend on valid MemWal delegate credentials and Walrus Testnet availability.
+- Full Seal threshold access control requires deploying `move/provenance_seal` and setting the public Seal env vars.
 
-## 🏆 Hackathon Checklist Status
+## License
 
-- [x] **State Persistence:** MemWal keeps track of all checkpoint links.
-- [x] **File Portability:** Encrypted checkpoint files and proof HTML pages are saved on Walrus, readable anywhere.
-- [x] **AI Workflow:** AI agent analyzes writing progress, compares local session history, creates reusable briefs, and saves thoughts to the delegate's memory.
-- [x] **Sui Integration:** Current dApp Kit wallet connection and Sui Testnet identity in the UI.
-- [x] **Signed Authorship:** Server-side Sui personal-message signature verification protects checkpoint, proof, share, and agent routes.
-- [x] **Private Draft Mode:** Browser-side AES-GCM encryption keeps plaintext drafts out of public Walrus blobs; Seal threshold access control is the next production hardening layer.
-- [x] **Aesthetic UI:** Complete responsiveness with customized dark mode.
-
----
-
-## Verified Testnet Status
-
-The following flow was exercised against real services on June 18, 2026:
-
-- Walrus checkpoint upload returned a real blob ID.
-- MemWal recalled the checkpoint from the session namespace.
-- The writing agent analyzed the recalled Walrus content.
-- A shareable session manifest was published to Walrus.
-- A self-contained proof page was published to Walrus.
-- `npm run type-check` and `npm run build` pass on Next.js 16.2.9.
-- `npm audit --omit=dev` reports zero vulnerabilities.
-
-Security and hackathon-readiness review status is summarized below.
-
-### Current Audit Status
-
-- **Working Testnet path:** wallet UI, signed session authorization, encrypted checkpoint upload, MemWal recall, agent analysis, session share, and proof publishing have been smoke-tested against real services.
-- **Authorship:** server API routes verify a Sui personal-message signature before writing checkpoints, running agent analysis, publishing session manifests, or generating proofs.
-- **Privacy:** checkpoint blobs store ciphertext and verification metadata, not plaintext draft text. Seal threshold encryption can replace the wallet-derived private mode after an access-control package is deployed.
-- **Operations note:** write/costly API routes include basic rate limits and request-size caps; production deployment should add persistent edge quotas.
-- **Dependency note:** Next.js is upgraded to `16.2.9` with a patched nested PostCSS override; production dependency audit is clean.
-
----
-
-## 📜 License
-MIT © 2026 [Sumit Raikwar](https://github.com/SumitRaikwar18) — Developed for Sui Overflow 2026.
+MIT. Developed for Sui Overflow 2026.

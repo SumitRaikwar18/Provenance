@@ -1,0 +1,10 @@
+[package]
+name = "provenance_seal"
+edition = "2024"
+license = "Apache-2.0"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "ff1fe0ec455153707136cffd0dc77dfb77ba9ad5" }
+
+[addresses]
+provenance_seal = "0x0"

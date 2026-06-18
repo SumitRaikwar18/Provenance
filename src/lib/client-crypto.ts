@@ -1,4 +1,5 @@
 import type { SessionAuth } from "@/lib/auth-message";
+import { getPublicSealConfig, isSealThresholdConfigured } from "@/lib/seal-config";
 import type { EncryptedPayload } from "@/types";
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -56,6 +57,7 @@ export async function encryptCheckpointContent(params: {
   walletAddress: string;
   auth: SessionAuth;
 }): Promise<EncryptedPayload> {
+  const sealConfig = getPublicSealConfig();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await deriveKey(params.auth, salt);
@@ -77,6 +79,14 @@ export async function encryptCheckpointContent(params: {
     iv: bytesToBase64(iv),
     salt: bytesToBase64(salt),
     aad,
+    seal: {
+      status: isSealThresholdConfigured() ? "configured" : "fallback",
+      packageId: sealConfig.packageId || undefined,
+      moduleName: sealConfig.moduleName,
+      threshold: sealConfig.threshold,
+      keyServerCount: sealConfig.keyServers.length,
+      policy: "creator-owned-checkpoint-key",
+    },
   };
 }
 
