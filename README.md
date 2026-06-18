@@ -2,7 +2,7 @@
 
 **Your writing, cryptographically proven.**
 
-Provenance is a private, verifiable memory layer for long-running writing agents. It encrypts writing checkpoints in the browser, stores durable artifacts on Walrus, indexes session memory in MemWal, ties authorship to a Sui wallet, and publishes shareable proof pages that anyone can independently verify.
+Provenance is a private, verifiable memory layer for long-running writing agents. It encrypts writing checkpoints in the browser, stores durable artifacts on Walrus, indexes session memory in MemWal, ties authorship to a Sui wallet, and publishes shareable proof pages that anyone can independently verify. Its Seal access-control policy is deployed on Sui Testnet for the next privacy hardening step.
 
 Built for the **Sui Overflow 2026 Walrus Track**.
 
@@ -30,7 +30,7 @@ For judges, the product demonstrates the exact Walrus Track thesis: agents becom
 - MemWal checkpoint indexing under `provenance:{sessionId}` namespaces.
 - Cross-session writing memory agent with themes, style notes, next actions, and reusable briefs.
 - Shareable proof pages that fetch and verify checkpoint blobs through a public Walrus aggregator.
-- Sui Move Seal policy package under `move/provenance_seal`.
+- Sui Move Seal policy package deployed on Testnet under `move/provenance_seal`.
 
 ## Architecture
 
@@ -96,7 +96,7 @@ The project includes the on-chain access-control policy needed by Seal:
 - Approval function: `seal_approve(id: vector<u8>, key: &CheckpointKey)`
 - Policy: only the creator-owned `CheckpointKey` with the matching `creator + session_id + nonce` can approve key access.
 
-Current working mode is browser AES-GCM encryption with deployed Seal policy metadata. Full Seal threshold encryption uses the deployed package and the verified Testnet committee key server configuration:
+Current working mode is browser AES-GCM encryption with deployed Seal policy metadata. The deployed package and verified Testnet committee key server configuration are ready for full Seal threshold encryption:
 
 ```env
 NEXT_PUBLIC_SEAL_ENABLED=true
@@ -106,7 +106,7 @@ NEXT_PUBLIC_SEAL_THRESHOLD=3
 NEXT_PUBLIC_SEAL_KEY_SERVERS=[{"objectId":"0xb012378c9f3799fb5b1a7083da74a4069e3c3f1c93de0b27212a5799ce1e1e98","weight":5,"aggregatorUrl":"https://seal-aggregator-testnet.mystenlabs.com"}]
 ```
 
-The app records Seal readiness metadata with each encrypted payload. If the Seal environment is absent, it safely falls back to wallet-session AES-GCM encryption.
+The app records Seal readiness metadata with each encrypted payload. If the Seal environment is absent, it safely falls back to wallet-session AES-GCM encryption. The on-chain package is intentionally small and auditable: it creates creator-owned checkpoint key objects and exposes `seal_approve` for Seal key-server policy evaluation.
 
 ## Stack
 
@@ -168,14 +168,17 @@ npm run seal:build
 
 ## Submission Demo Script
 
-1. Open the landing page and explain the problem: AI writing agents lose durable memory and cannot prove the writing process.
-2. Connect a Sui wallet and show redirect into the dashboard.
-3. Write a short draft and click **Seal Now** or wait for the demo checkpoint cadence.
-4. Open the checkpoint log and show the Walrus blob ID.
-5. Run the AI Writing Agent and show recovered themes, cross-session memory, next actions, and reusable brief.
-6. Generate a proof page and open the Walrus proof URL.
-7. Show that the proof page verifies checkpoints through public Walrus blob references.
-8. Disconnect the wallet and show redirect back to the landing page.
+Target length: 4 to 5 minutes.
+
+1. **Problem, 20 seconds:** AI writing agents lose long-term context and cannot prove how a piece of writing evolved.
+2. **Solution, 25 seconds:** Provenance turns a writing session into encrypted Walrus artifacts, MemWal memory, Sui wallet authorship, and a public proof page.
+3. **Landing page, 25 seconds:** Show the homepage, tagline, Walrus/MemWal/Sui positioning, and click the wallet connect CTA.
+4. **Wallet identity, 30 seconds:** Connect a Sui wallet and show the redirect into the dashboard.
+5. **Checkpoint creation, 45 seconds:** Type a short draft, trigger a checkpoint, and show the checkpoint log with word count and Walrus blob ID.
+6. **Memory agent, 55 seconds:** Run the AI Writing Agent and show themes, style notes, cross-session memory, next actions, and reusable brief.
+7. **Proof publishing, 45 seconds:** Generate a proof page, open the Walrus proof URL, and show the verification/integrity section.
+8. **Technical proof, 35 seconds:** Briefly show the README architecture and the deployed Seal package ID on Sui Testnet.
+9. **Close, 20 seconds:** Explain why this matters for the Walrus Track: portable memory, durable files, verifiable artifacts, and a product path beyond the hackathon.
 
 ## Verification Status
 
@@ -185,7 +188,7 @@ npm run seal:build
 - `npm run seal:build` passes.
 - `move/provenance_seal` is published on Sui Testnet at `0x490d372b955a11c6e0bf0b1af43c5b66c3b3b190f68268907fdf4f463987b49a`.
 - Real live checkpoint, MemWal recall, session share, and proof publishing depend on valid MemWal delegate credentials and Walrus Testnet availability.
-- Full Seal threshold encryption still requires wiring `@mysten/seal` encrypt/decrypt calls into the dashboard runtime; the access-control package and public key-server config are now ready.
+- Seal threshold access-control package and public key-server config are deployed and documented; browser AES-GCM remains the current default encryption mode until full `@mysten/seal` encrypt/decrypt UX is enabled.
 
 ## License
 
