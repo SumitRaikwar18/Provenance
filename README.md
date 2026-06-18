@@ -41,9 +41,9 @@ Built for the **🏆 Sui Overflow 2026 — Walrus Track**, Provenance demonstrat
 |--------|--------------------------|
 | 🔑 **Sui Wallet Identity** | User authentication anchored to Sui testnet addresses via `@mysten/dapp-kit-react` |
 | 📝 **Focused Editor** | Distraction-free, responsive dark-mode text editor with real-time statistics |
-| ⏱️ **Auto-Seal Checkpoints** | Draft states are sealed as permanent content-addressed JSON blobs on Walrus |
+| ⏱️ **Encrypted Auto-Seal Checkpoints** | Draft states are encrypted in-browser, then sealed as permanent content-addressed JSON blobs on Walrus |
 | 🧠 **Verifiable Memory Chains** | Sequential history links stored in MemWal session namespaces (`provenance:{sessionId}`) |
-| 🤖 **AI Writing Agent** | Background intelligence analyzing writing velocity, themes, style, and idea evolution |
+| 🤖 **Cross-Session Memory Agent** | Background intelligence analyzing writing velocity, themes, style, cross-session patterns, next actions, and reusable briefs |
 | 📄 **Shareable Proof Pages** | Self-contained, beautiful verification HTML pages served as raw `text/html` from Walrus |
 | 🔍 **Independent Auditing** | Verify any proof page independently using only public Walrus aggregators and SHA-256 hashes |
 
@@ -337,10 +337,11 @@ Anyone can verify a generated proof page independently using raw tools.
 ## 🏆 Hackathon Checklist Status
 
 - [x] **State Persistence:** MemWal keeps track of all checkpoint links.
-- [x] **File Portability:** Checkpoint files and proof HTML pages are saved on Walrus, readable anywhere.
-- [x] **AI Workflow:** AI agent analyzes writing progress and saves thoughts to the delegate's memory.
+- [x] **File Portability:** Encrypted checkpoint files and proof HTML pages are saved on Walrus, readable anywhere.
+- [x] **AI Workflow:** AI agent analyzes writing progress, compares local session history, creates reusable briefs, and saves thoughts to the delegate's memory.
 - [x] **Sui Integration:** Current dApp Kit wallet connection and Sui Testnet identity in the UI.
-- [ ] **Signed Authorship:** Server-side personal-message signature verification is required before claiming cryptographic wallet ownership.
+- [x] **Signed Authorship:** Server-side Sui personal-message signature verification protects checkpoint, proof, share, and agent routes.
+- [x] **Private Draft Mode:** Browser-side AES-GCM encryption keeps plaintext drafts out of public Walrus blobs; Seal threshold access control is the next production hardening layer.
 - [x] **Aesthetic UI:** Complete responsiveness with customized dark mode.
 
 ---
@@ -354,17 +355,18 @@ The following flow was exercised against real services on June 18, 2026:
 - The writing agent analyzed the recalled Walrus content.
 - A shareable session manifest was published to Walrus.
 - A self-contained proof page was published to Walrus.
-- `npm run type-check` and `npm run build` pass on Next.js 14.2.35.
+- `npm run type-check` and `npm run build` pass on Next.js 16.2.9.
+- `npm audit --omit=dev` reports zero vulnerabilities.
 
 Security and hackathon-readiness review status is summarized below.
 
 ### Current Audit Status
 
-- **Working Testnet path:** wallet UI, signed session authorization, checkpoint upload, MemWal recall, agent analysis, session share, and proof publishing have been smoke-tested against real services.
+- **Working Testnet path:** wallet UI, signed session authorization, encrypted checkpoint upload, MemWal recall, agent analysis, session share, and proof publishing have been smoke-tested against real services.
 - **Authorship:** server API routes verify a Sui personal-message signature before writing checkpoints, running agent analysis, publishing session manifests, or generating proofs.
-- **Privacy note:** checkpoints are public Walrus blobs by design in the current build. Add Seal encryption or an explicit public-content warning for private drafts.
+- **Privacy:** checkpoint blobs store ciphertext and verification metadata, not plaintext draft text. Seal threshold encryption can replace the wallet-derived private mode after an access-control package is deployed.
 - **Operations note:** write/costly API routes include basic rate limits and request-size caps; production deployment should add persistent edge quotas.
-- **Dependency note:** Next.js is patched to `14.2.35`; `npm audit --omit=dev` still reports advisories that require a future major Next upgrade.
+- **Dependency note:** Next.js is upgraded to `16.2.9` with a patched nested PostCSS override; production dependency audit is clean.
 
 ---
 

@@ -22,20 +22,24 @@ export async function buildProofEntries(checkpoints: CheckpointMemory[]): Promis
     const raw = await fetchBlob(cp.blobId);
     const parsed = JSON.parse(raw) as Checkpoint;
     const content = parsed.content ?? "";
-    const excerpt = content.slice(0, 160);
+    const isEncrypted = parsed.privacyMode === "encrypted";
+    const excerpt = isEncrypted
+      ? `Encrypted checkpoint: ${parsed.wordCount} words, ${parsed.charCount} characters. Private draft text is not stored in plaintext on Walrus.`
+      : content.slice(0, 160);
 
     entries.push({
       checkpointIndex: parsed.checkpointIndex,
       timestamp: parsed.timestamp,
       wordCount: parsed.wordCount,
-      wordDelta: wordDelta(previousContent, content),
+      wordDelta: isEncrypted ? parsed.wordCount - countWords(previousContent) : wordDelta(previousContent, content),
       blobId: cp.blobId,
       blobUrl: blobUrl(cp.blobId),
-      excerpt: content.length > 160 ? `${excerpt}...` : excerpt,
+      excerpt: !isEncrypted && content.length > 160 ? `${excerpt}...` : excerpt,
       contentHash: parsed.contentHash,
+      privacyMode: parsed.privacyMode ?? "public",
     });
 
-    previousContent = content;
+    previousContent = isEncrypted ? " ".repeat(parsed.wordCount) : content;
   }
 
   return entries;
@@ -60,6 +64,7 @@ export function generateProofHtml(sessionId: string, walletAddress: string, entr
       blobId: e.blobId,
       contentHash: e.contentHash,
       excerpt: e.excerpt,
+      privacyMode: e.privacyMode ?? "public",
     })),
   };
   const proofJson = JSON.stringify(proofData)
@@ -662,6 +667,17 @@ async function runVerify() {
       if (!res.ok) throw new Error('Failed to fetch from Walrus');
       const data = await res.json();
       
+      if (known.privacyMode === 'encrypted') {
+        if (data.privacyMode === 'encrypted' && data.contentHash === known.contentHash && data.encryptedPayload) {
+          result.className = 'vw-result ok';
+          result.innerHTML = '✓ Encrypted Walrus checkpoint found. Ciphertext payload exists and committed plaintext SHA-256 matches checkpoint #' + (known.index + 1) + '. Decryption requires the writer wallet session key.<br>SHA-256: <code style="font-size:.72rem;word-break:break-all">' + known.contentHash + '</code>';
+        } else {
+          result.className = 'vw-result fail';
+          result.innerHTML = '✕ Encrypted checkpoint metadata mismatch.';
+        }
+        return;
+      }
+
       const computedHash = await computeSha256(data.content || '');
       if (computedHash === known.contentHash) {
         result.className = 'vw-result ok';
@@ -707,8 +723,19 @@ async function verifySingleCheckpoint(index) {
     if (!res.ok) throw new Error('Failed to fetch');
     const data = await res.json();
     
-    const computedHash = await computeSha256(data.content || '');
-    if (computedHash === entry.contentHash) {
+      if (entry.privacyMode === 'encrypted') {
+        if (data.privacyMode === 'encrypted' && data.contentHash === entry.contentHash && data.encryptedPayload) {
+          el.className = 'cp-verify-result ok';
+          el.innerHTML = '✓ Encrypted blob verified · committed SHA-256 matches · decryptable only by wallet session key';
+        } else {
+          el.className = 'cp-verify-result fail';
+          el.textContent = 'Encrypted checkpoint metadata mismatch.';
+        }
+        return;
+      }
+
+      const computedHash = await computeSha256(data.content || '');
+      if (computedHash === entry.contentHash) {
       el.className = 'cp-verify-result ok';
       el.innerHTML = '✓ Verified on Walrus · SHA-256 matches · <code style="font-size:.65rem">' + entry.contentHash.slice(0,16) + '...</code>';
     } else {

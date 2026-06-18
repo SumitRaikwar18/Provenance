@@ -1,10 +1,5 @@
-import dynamic from "next/dynamic";
-
-const DashboardClient = dynamic(() => import("@/components/DashboardClient"), {
-  ssr: false,
-  loading: () => <main className="min-h-screen grid place-items-center">Loading dashboard...</main>,
-});
+import DashboardNoSSR from "@/components/DashboardNoSSR";
 
 export default function DashboardPage() {
-  return <DashboardClient />;
+  return <DashboardNoSSR />;
 }

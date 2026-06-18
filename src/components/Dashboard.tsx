@@ -6,6 +6,7 @@ import { useDAppKit, useCurrentWallet, useWalletConnection } from "@mysten/dapp-
 import { ConnectModal } from "@mysten/dapp-kit-react/ui";
 import { nanoid } from "nanoid";
 import { buildSessionAuthMessage, type SessionAuth } from "@/lib/auth-message";
+import { encryptCheckpointContent, sha256Hex } from "@/lib/client-crypto";
 import { countWords, extractTitle, formatDate, formatTime, truncateAddress } from "@/lib/client-text";
 import type { CheckpointResponse, ProofResponse, Session } from "@/types";
 
@@ -40,6 +41,9 @@ interface AgentInsight {
   paceSummary: string;
   keyIdeas: string[];
   agentSummary: string;
+  crossSessionPatterns: string[];
+  nextActions: string[];
+  reusableBrief: string;
   analyzedAt: string;
   checkpointCount: number;
 }
@@ -259,15 +263,30 @@ export function Dashboard() {
 
     try {
       const auth = await getSessionAuth();
+      const plaintext = contentRef.current;
+      const encryptedPayload = await encryptCheckpointContent({
+        content: plaintext,
+        sessionId,
+        checkpointIndex: cpIndexRef.current,
+        walletAddress,
+        auth,
+      });
+      const contentHash = await sha256Hex(plaintext);
       const res = await fetch("/api/checkpoint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          content: contentRef.current,
+          content: "",
           checkpointIndex: cpIndexRef.current,
           walletAddress,
           auth,
+          privacyMode: "encrypted",
+          encryptedPayload,
+          contentHash,
+          wordCount: countWords(plaintext),
+          charCount: plaintext.length,
+          title: extractTitle(plaintext),
         }),
       });
 
@@ -297,7 +316,7 @@ export function Dashboard() {
       });
 
       setTickerState("saved");
-      showToast(`Checkpoint #${cpIndexRef.current} sealed on Walrus`, "ok");
+      showToast(`Encrypted checkpoint #${cpIndexRef.current} sealed on Walrus`, "ok");
       setTimeout(() => setTickerState("idle"), 3000);
     } catch (err) {
       setTickerState("error");
@@ -355,7 +374,12 @@ export function Dashboard() {
         const res = await fetch("/api/agent/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, walletAddress, auth }),
+          body: JSON.stringify({
+            sessionId,
+            walletAddress,
+            auth,
+            sessions: readJson<Session[]>("provenance:sessions", []),
+          }),
         });
         const data = await res.json();
         if (data.success && data.insight) {
@@ -453,8 +477,8 @@ export function Dashboard() {
 
   // ─── Ticker label ─────────────────────────────────────────────────────────
   const tickerLabel = () => {
-    if (tickerState === "saving") return "Sealing on Walrus...";
-    if (tickerState === "saved" ) return "✓ Sealed on Walrus";
+    if (tickerState === "saving") return "Encrypting + sealing on Walrus...";
+    if (tickerState === "saved" ) return "✓ Encrypted on Walrus";
     if (tickerState === "error" ) return "Seal failed";
     return `Next seal in ${nextSaveIn}s`;
   };
@@ -651,7 +675,7 @@ export function Dashboard() {
               </div>
 
               <div className="public-storage-note">
-                Public Testnet mode: sealed checkpoints are permanent Walrus blobs. Do not paste private drafts here until Seal encryption is enabled.
+                Private mode active: draft text is encrypted in your browser before Walrus upload. Walrus stores ciphertext plus hashes; MemWal stores the portable memory index.
               </div>
 
               {/* Editor section */}
@@ -686,7 +710,7 @@ export function Dashboard() {
                   <textarea
                     className="dash-textarea"
                     id="main-editor"
-                    placeholder={`Start writing. Your process is being sealed on Walrus every ${DEMO ? "15 seconds (demo mode)" : "60 seconds"}...`}
+                    placeholder={`Start writing. Your process is encrypted locally and sealed on Walrus every ${DEMO ? "15 seconds (demo mode)" : "60 seconds"}...`}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                   />
@@ -726,6 +750,16 @@ export function Dashboard() {
                             Key ideas: {agentInsights.keyIdeas.join(" · ")}
                           </div>
                         )}
+                        {agentInsights.crossSessionPatterns?.length > 0 && (
+                          <div className="agent-insight">
+                            Cross-session memory: {agentInsights.crossSessionPatterns.join(" · ")}
+                          </div>
+                        )}
+                        {agentInsights.nextActions?.length > 0 && (
+                          <div className="agent-insight">
+                            Next actions: {agentInsights.nextActions.join(" · ")}
+                          </div>
+                        )}
                       </div>
                     ) : agentStrings.length > 0 ? (
                       <div className="agent-insights">
@@ -749,7 +783,7 @@ export function Dashboard() {
                 <div className="cp-card">
                   <div className="cp-head">
                     <div className="cp-head-title">Checkpoint Chain</div>
-                    <div className="cp-head-meta">Each entry is a permanent Walrus blob</div>
+                  <div className="cp-head-meta">Each entry is an encrypted permanent Walrus blob</div>
                   </div>
                   {checkpoints.length === 0 ? (
                     <div className="cp-empty">
@@ -909,6 +943,15 @@ export function Dashboard() {
                         )}
                         {agentInsights.keyIdeas.length > 0 && (
                           <div className="apc-insight">Key ideas: {agentInsights.keyIdeas.join(" · ")}</div>
+                        )}
+                        {agentInsights.crossSessionPatterns?.length > 0 && (
+                          <div className="apc-insight">Cross-session memory: {agentInsights.crossSessionPatterns.join(" · ")}</div>
+                        )}
+                        {agentInsights.nextActions?.length > 0 && (
+                          <div className="apc-insight">Next actions: {agentInsights.nextActions.join(" · ")}</div>
+                        )}
+                        {agentInsights.reusableBrief && (
+                          <div className="apc-insight bold">Reusable agent brief: {agentInsights.reusableBrief}</div>
                         )}
                         <div className="apc-insight muted">
                           Analysed {agentInsights.checkpointCount} checkpoint{agentInsights.checkpointCount !== 1 ? "s" : ""} · {formatDate(agentInsights.analyzedAt)}

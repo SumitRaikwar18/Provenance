@@ -3,10 +3,11 @@ import { fetchBlob } from "@/lib/walrus";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { blobId: string } },
+  { params }: { params: Promise<{ blobId: string }> },
 ) {
+  let blobId = "";
   try {
-    const { blobId } = params;
+    blobId = (await params).blobId;
 
     if (!blobId) {
       return NextResponse.json({ success: false, error: "Missing blobId" }, { status: 400 });
@@ -21,7 +22,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error(`[GET /proof/${params?.blobId}]`, error);
+    console.error(`[GET /proof/${blobId}]`, error);
     return new NextResponse(
       `<!DOCTYPE html>
 <html lang="en">

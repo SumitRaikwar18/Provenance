@@ -6,9 +6,21 @@ export interface Checkpoint {
   wordCount: number;
   charCount: number;
   contentHash: string;
-  content: string;
+  content?: string;
+  title?: string;
+  privacyMode?: "public" | "encrypted";
+  encryptedPayload?: EncryptedPayload;
   appName: string;
   version: string;
+}
+
+export interface EncryptedPayload {
+  algorithm: "AES-GCM";
+  keyDerivation: "wallet-signature-session-key";
+  ciphertext: string;
+  iv: string;
+  salt: string;
+  aad: string;
 }
 
 export interface CheckpointMemory {
@@ -43,6 +55,7 @@ export interface ProofEntry {
   blobUrl: string;
   excerpt: string;
   contentHash: string;
+  privacyMode?: "public" | "encrypted";
 }
 
 export interface CheckpointResponse {
